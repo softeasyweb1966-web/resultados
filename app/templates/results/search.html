@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Buscar Orden{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h4><i class="bi bi-search me-2"></i>Registrar Resultado</h4>
+    <hr>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <form method="get" class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Consecutivo / Orden</label>
+            <input type="text" name="consecutive" class="form-control" value="{{ consecutive }}"
+                   placeholder="Ej: ORD-2024-001" autofocus>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Código del examen</label>
+            <input type="text" name="exam_code" class="form-control" value="{{ exam_code }}"
+                   placeholder="Ej: HEM">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-search me-1"></i>Buscar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if order %}
+    <div class="alert alert-info">
+      <strong>Orden encontrada:</strong>
+      {{ order.consecutive }} · {{ order.patient.name }}
+      ({{ order.patient.document_type }}: {{ order.patient.document }})
+      · {{ order.date.strftime('%Y-%m-%d') }}
+    </div>
+    <h6 class="mt-3">Seleccione el examen:</h6>
+    <div class="list-group">
+      {% for exam in exams %}
+      <a href="{{ url_for('results.register', order_id=order.id, exam_id=exam.id) }}"
+         class="list-group-item list-group-item-action">
+        <span class="badge bg-secondary me-2">{{ exam.code }}</span>{{ exam.name }}
+        {% if exam.category == 'veterinary' %}
+          <span class="badge bg-warning text-dark ms-1">Veterinaria</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+      <h6>¿No tiene orden? <a href="{{ url_for('orders.order_new') }}">Crear nueva orden</a></h6>
+    </div>
+  </div>
+</div>
+{% endblock %}

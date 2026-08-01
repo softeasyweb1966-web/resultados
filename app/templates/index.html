@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Inicio – Módulo de Resultados{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <h3 class="mb-0"><i class="bi bi-house-door me-2"></i>Panel Principal</h3>
+    <hr>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-pencil-square display-4 text-primary"></i>
+        <h5 class="card-title mt-3">Registrar Resultado</h5>
+        <p class="card-text text-muted">Ingrese los resultados de un examen de laboratorio.</p>
+        <a href="{{ url_for('results.search') }}" class="btn btn-primary">
+          <i class="bi bi-arrow-right-circle me-1"></i>Ir a Registro
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-list-check display-4 text-success"></i>
+        <h5 class="card-title mt-3">Resultados</h5>
+        <p class="card-text text-muted">Consulte y gestione los resultados registrados.</p>
+        <a href="{{ url_for('results.list_results') }}" class="btn btn-success">
+          <i class="bi bi-search me-1"></i>Ver Resultados
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-journal-medical display-4 text-info"></i>
+        <h5 class="card-title mt-3">Catálogo de Exámenes</h5>
+        <p class="card-text text-muted">Defina exámenes, parámetros y diseñe plantillas.</p>
+        <a href="{{ url_for('exams.list_exams') }}" class="btn btn-info text-white">
+          <i class="bi bi-gear me-1"></i>Gestionar Exámenes
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-file-text display-4 text-warning"></i>
+        <h5 class="card-title mt-3">Órdenes</h5>
+        <p class="card-text text-muted">Busque y gestione órdenes de laboratorio.</p>
+        <a href="{{ url_for('orders.list_orders') }}" class="btn btn-warning text-dark">
+          <i class="bi bi-folder2-open me-1"></i>Ver Órdenes
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-file-pdf display-4 text-danger"></i>
+        <h5 class="card-title mt-3">Configuración PDF</h5>
+        <p class="card-text text-muted">Configure el diseño del PDF, logos y QR.</p>
+        <a href="{{ url_for('pdf_config.list_configs') }}" class="btn btn-danger">
+          <i class="bi bi-sliders me-1"></i>Configurar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body text-center py-4">
+        <i class="bi bi-people display-4 text-secondary"></i>
+        <h5 class="card-title mt-3">Pacientes</h5>
+        <p class="card-text text-muted">Registre y consulte pacientes.</p>
+        <a href="{{ url_for('orders.patients_list') }}" class="btn btn-secondary">
+          <i class="bi bi-person-plus me-1"></i>Ver Pacientes
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

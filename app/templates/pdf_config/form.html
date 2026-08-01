@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if cfg else 'Nueva' }} Configuración PDF{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h4><i class="bi bi-file-pdf me-2"></i>{{ 'Editar' if cfg else 'Nueva' }} Configuración PDF</h4>
+    <hr>
+    <form method="post" enctype="multipart/form-data" class="card p-4 shadow-sm">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nombre de la configuración *</label>
+          <input type="text" name="name" class="form-control" value="{{ cfg.name if cfg else 'Default' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Logo (imagen)</label>
+          <input type="file" name="logo_file" class="form-control" accept=".png,.jpg,.jpeg,.gif,.svg">
+          {% if cfg and cfg.logo_path %}
+          <small class="text-muted">Logo actual: {{ cfg.logo_path }}</small>
+          {% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label">Nombre de la institución</label>
+          <input type="text" name="institution_name" class="form-control"
+                 value="{{ cfg.institution_name if cfg else '' }}"
+                 placeholder="Hospital / Laboratorio Clínico XYZ">
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Dirección</label>
+          <input type="text" name="institution_address" class="form-control"
+                 value="{{ cfg.institution_address if cfg else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="institution_phone" class="form-control"
+                 value="{{ cfg.institution_phone if cfg else '' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Texto de encabezado (HTML permitido)</label>
+          <textarea name="header_text" class="form-control" rows="2">{{ cfg.header_text if cfg else '' }}</textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Texto de pie de página</label>
+          <textarea name="footer_text" class="form-control" rows="2">{{ cfg.footer_text if cfg else '' }}</textarea>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Tamaño de página</label>
+          <select name="page_size" class="form-select">
+            <option value="A4" {{ 'selected' if not cfg or cfg.page_size=='A4' }}>A4</option>
+            <option value="Letter" {{ 'selected' if cfg and cfg.page_size=='Letter' }}>Carta (Letter)</option>
+          </select>
+        </div>
+        <div class="col-md-9">
+          <label class="form-label">Márgenes (mm): Superior / Inferior / Izquierdo / Derecho</label>
+          <div class="input-group">
+            <input type="number" name="margin_top" class="form-control" value="{{ cfg.margin_top if cfg else 20 }}" placeholder="Top" step="0.5" min="0">
+            <input type="number" name="margin_bottom" class="form-control" value="{{ cfg.margin_bottom if cfg else 20 }}" placeholder="Bottom" step="0.5" min="0">
+            <input type="number" name="margin_left" class="form-control" value="{{ cfg.margin_left if cfg else 20 }}" placeholder="Left" step="0.5" min="0">
+            <input type="number" name="margin_right" class="form-control" value="{{ cfg.margin_right if cfg else 20 }}" placeholder="Right" step="0.5" min="0">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check mt-2">
+            <input type="checkbox" class="form-check-input" name="show_qr" id="showQr" {{ 'checked' if not cfg or cfg.show_qr }}>
+            <label class="form-check-label" for="showQr">Mostrar QR</label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check mt-2">
+            <input type="checkbox" class="form-check-input" name="show_watermark" id="showWatermark" {{ 'checked' if cfg and cfg.show_watermark }}>
+            <label class="form-check-label" for="showWatermark">Marca de agua</label>
+          </div>
+        </div>
+        <div class="col-md-6" id="watermarkRow" style="{{ 'display:none' if not cfg or not cfg.show_watermark else '' }}">
+          <label class="form-label">Texto de marca de agua</label>
+          <input type="text" name="watermark_text" class="form-control"
+                 value="{{ cfg.watermark_text if cfg else '' }}" placeholder="COPIA / BORRADOR ...">
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Guardar</button>
+          <a href="{{ url_for('pdf_config.list_configs') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+document.getElementById('showWatermark').addEventListener('change', function() {
+  document.getElementById('watermarkRow').style.display = this.checked ? '' : 'none';
+});
+</script>
+{% endblock %}
