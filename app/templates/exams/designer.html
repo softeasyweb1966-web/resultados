@@ -1,0 +1,480 @@
+{% extends "base.html" %}
+{% block title %}Diseñador de Plantilla – {{ exam.name }}{% endblock %}
+{% block extra_head %}
+<style>
+#designerGrid { border-collapse: collapse; }
+#designerGrid td {
+  border: 1px solid #999;
+  min-width: 80px;
+  min-height: 32px;
+  padding: 4px 6px;
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-size: 13px;
+}
+#designerGrid td.selected { background: #cfe2ff !important; outline: 2px solid #0d6efd; }
+#designerGrid td.cell-header { background: #d0e4ff; font-weight: bold; text-align: center; }
+#designerGrid td.cell-label { background: #f0f0f0; }
+#designerGrid td.cell-result { background: #d4edda; }
+#designerGrid td.cell-fixed { background: #fff3cd; }
+#designerGrid td.cell-blank { background: #fff; }
+#designerGrid td.cell-units { background: #e2d9f3; }
+.cell-badge {
+  font-size: 10px;
+  padding: 0 3px;
+  border-radius: 3px;
+  margin-left: 4px;
+  color: #fff;
+}
+.badge-result { background: #198754; }
+.badge-header { background: #0d6efd; }
+.badge-label { background: #6c757d; }
+.badge-fixed { background: #ffc107; color: #000; }
+.badge-units { background: #7952b3; }
+#previewPane table { border-collapse: collapse; font-size: 12px; }
+#previewPane td, #previewPane th { border: 1px solid #ccc; padding: 3px 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h4><i class="bi bi-grid-3x3 me-2"></i>Diseñador de Plantilla
+    <small class="text-muted fs-6 ms-2">{{ exam.name }} ({{ exam.code }})</small>
+  </h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('exams.exam_detail', exam_id=exam.id) }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+    <button class="btn btn-sm btn-success" id="saveBtn">
+      <i class="bi bi-save me-1"></i>Guardar plantilla
+    </button>
+  </div>
+</div>
+<hr class="mt-1">
+
+<div class="row g-3">
+  <!-- Toolbar -->
+  <div class="col-12">
+    <div class="card p-2 shadow-sm bg-light">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <label class="form-label mb-0 small fw-bold">Filas:</label>
+          <input type="number" id="gridRows" class="form-control form-control-sm d-inline-block" style="width:70px" value="10" min="1" max="50">
+        </div>
+        <div class="col-auto">
+          <label class="form-label mb-0 small fw-bold">Columnas:</label>
+          <input type="number" id="gridCols" class="form-control form-control-sm d-inline-block" style="width:70px" value="6" min="1" max="20">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-sm btn-outline-secondary" id="resizeBtn">
+            <i class="bi bi-arrows-angle-expand me-1"></i>Redimensionar
+          </button>
+        </div>
+        <div class="col-auto border-start ps-3">
+          <span class="small fw-bold me-1">Tipo de celda:</span>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary cell-type-btn" data-type="label">Etiqueta</button>
+            <button class="btn btn-outline-primary cell-type-btn" data-type="header">Encabezado</button>
+            <button class="btn btn-outline-success cell-type-btn" data-type="result">Resultado</button>
+            <button class="btn btn-outline-warning cell-type-btn" data-type="fixed">Fijo</button>
+            <button class="btn btn-outline-info cell-type-btn" data-type="units">Unidades</button>
+            <button class="btn btn-outline-dark cell-type-btn" data-type="blank">Vacío</button>
+          </div>
+        </div>
+        <div class="col-auto border-start ps-3">
+          <button class="btn btn-sm btn-outline-warning" id="mergeBtn" title="Combinar celdas seleccionadas">
+            <i class="bi bi-layout-split me-1"></i>Combinar
+          </button>
+          <button class="btn btn-sm btn-outline-danger" id="unmergeBtn" title="Separar celda">
+            <i class="bi bi-layout-three-columns me-1"></i>Separar
+          </button>
+        </div>
+        <div class="col-auto border-start ps-3">
+          <button class="btn btn-sm btn-outline-secondary" id="boldBtn" title="Negrita">
+            <i class="bi bi-type-bold"></i>
+          </button>
+          <div class="btn-group btn-group-sm ms-1">
+            <button class="btn btn-outline-secondary align-btn" data-align="left"><i class="bi bi-text-left"></i></button>
+            <button class="btn btn-outline-secondary align-btn" data-align="center"><i class="bi bi-text-center"></i></button>
+            <button class="btn btn-outline-secondary align-btn" data-align="right"><i class="bi bi-text-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid + side panel -->
+  <div class="col-lg-8">
+    <div class="overflow-auto border rounded p-2 bg-white" style="max-height:75vh">
+      <table id="designerGrid">
+        <tbody id="gridBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Side panel -->
+  <div class="col-lg-4">
+    <!-- Cell properties -->
+    <div class="card mb-3 shadow-sm" id="cellPropsCard">
+      <div class="card-header bg-secondary text-white py-2 small fw-bold">
+        <i class="bi bi-pencil-square me-1"></i>Propiedades de celda
+        <span id="cellCoord" class="ms-2 text-warning"></span>
+      </div>
+      <div class="card-body p-3">
+        <div class="mb-2" id="contentRow">
+          <label class="form-label small mb-1">Contenido / etiqueta</label>
+          <input type="text" id="cellContent" class="form-control form-control-sm">
+        </div>
+        <div class="mb-2" id="paramRow">
+          <label class="form-label small mb-1">Parámetro asociado</label>
+          <select id="cellParam" class="form-select form-select-sm">
+            <option value="">– ninguno –</option>
+            {% for p in params %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.result_type }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small mb-1">Tipo de celda</label>
+          <select id="cellType" class="form-select form-select-sm">
+            <option value="label">Etiqueta</option>
+            <option value="header">Encabezado</option>
+            <option value="result">Resultado</option>
+            <option value="fixed">Fijo</option>
+            <option value="units">Unidades</option>
+            <option value="blank">Vacío</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm w-100" id="applyCellBtn">
+          <i class="bi bi-check2 me-1"></i>Aplicar
+        </button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-info text-white py-2 small fw-bold">
+        <i class="bi bi-eye me-1"></i>Vista previa
+      </div>
+      <div class="card-body p-2 overflow-auto" id="previewPane" style="max-height:300px">
+        <small class="text-muted">La vista previa se actualiza al guardar.</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================================================================
+// State
+// ========================================================================
+let ROWS = 10, COLS = 6;
+let cells = {};   // key: "r_c" => {row, col, rowspan, colspan, cell_type, content, parameter_id, style}
+let selectedCells = new Set();  // keys of selected cells
+let isDragging = false;
+let dragStart = null;
+
+// Initialize from server data
+const serverCells = {{ cells_json|safe }};
+serverCells.forEach(c => {
+  const key = `${c.row}_${c.col}`;
+  cells[key] = c;
+  ROWS = Math.max(ROWS, c.row + c.rowspan);
+  COLS = Math.max(COLS, c.col + c.colspan);
+});
+
+// ========================================================================
+// Grid rendering
+// ========================================================================
+function buildGrid() {
+  const tbody = document.getElementById('gridBody');
+  tbody.innerHTML = '';
+
+  // Compute covered cells
+  const covered = new Set();
+  const covered_by = {};
+  Object.values(cells).forEach(c => {
+    for (let r = c.row; r < c.row + c.rowspan; r++) {
+      for (let cc = c.col; cc < c.col + c.colspan; cc++) {
+        if (!(r === c.row && cc === c.col)) {
+          covered.add(`${r}_${cc}`);
+          covered_by[`${r}_${cc}`] = `${c.row}_${c.col}`;
+        }
+      }
+    }
+  });
+
+  for (let r = 0; r < ROWS; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < COLS; c++) {
+      const key = `${r}_${c}`;
+      if (covered.has(key)) continue;
+
+      const cell = cells[key] || {row: r, col: c, rowspan: 1, colspan: 1, cell_type: 'label', content: '', parameter_id: null, style: {}};
+      if (!cells[key]) cells[key] = cell;
+
+      const td = document.createElement('td');
+      td.dataset.key = key;
+      td.rowSpan = cell.rowspan || 1;
+      td.colSpan = cell.colspan || 1;
+      td.classList.add(`cell-${cell.cell_type}`);
+      if (selectedCells.has(key)) td.classList.add('selected');
+      if (cell.style?.bold) td.style.fontWeight = 'bold';
+      if (cell.style?.align) td.style.textAlign = cell.style.align;
+
+      // Content display
+      let display = cell.content || '';
+      if (cell.cell_type === 'result' && cell.parameter_id) {
+        const pName = getParamName(cell.parameter_id);
+        display = `<span class="text-success">[${pName}]</span>`;
+      }
+      if (cell.cell_type !== 'blank') {
+        const badge = `<span class="cell-badge badge-${cell.cell_type}">${cell.cell_type[0].toUpperCase()}</span>`;
+        td.innerHTML = `${display}${badge}`;
+      }
+
+      // Coord label
+      td.title = `(${r},${c}) ${cell.cell_type}`;
+
+      // Events
+      td.addEventListener('mousedown', e => { onMouseDown(e, key); });
+      td.addEventListener('mouseenter', e => { onMouseEnter(e, key); });
+      td.addEventListener('mouseup', e => { onMouseUp(e, key); });
+      td.addEventListener('dblclick', e => { openCellEditor(key); });
+
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+function getParamName(pid) {
+  const opt = document.querySelector(`#cellParam option[value="${pid}"]`);
+  return opt ? opt.textContent.split(' (')[0] : pid;
+}
+
+// ========================================================================
+// Selection
+// ========================================================================
+function onMouseDown(e, key) {
+  if (!e.shiftKey) selectedCells.clear();
+  selectedCells.add(key);
+  isDragging = true;
+  dragStart = key;
+  buildGrid();
+  updateCellPanel(key);
+}
+
+function onMouseEnter(e, key) {
+  if (!isDragging) return;
+  // Select rectangle
+  if (dragStart) {
+    const [r0, c0] = dragStart.split('_').map(Number);
+    const [r1, c1] = key.split('_').map(Number);
+    selectedCells.clear();
+    for (let r = Math.min(r0, r1); r <= Math.max(r0, r1); r++) {
+      for (let c = Math.min(c0, c1); c <= Math.max(c0, c1); c++) {
+        selectedCells.add(`${r}_${c}`);
+      }
+    }
+    buildGrid();
+  }
+}
+
+function onMouseUp(e, key) {
+  isDragging = false;
+}
+
+document.addEventListener('mouseup', () => { isDragging = false; });
+
+// ========================================================================
+// Cell panel
+// ========================================================================
+function updateCellPanel(key) {
+  const cell = cells[key];
+  if (!cell) return;
+  document.getElementById('cellCoord').textContent = `(${cell.row},${cell.col})`;
+  document.getElementById('cellContent').value = cell.content || '';
+  document.getElementById('cellType').value = cell.cell_type || 'label';
+  document.getElementById('cellParam').value = cell.parameter_id || '';
+}
+
+function openCellEditor(key) {
+  updateCellPanel(key);
+  document.getElementById('cellContent').focus();
+}
+
+document.getElementById('applyCellBtn').addEventListener('click', () => {
+  const type = document.getElementById('cellType').value;
+  const content = document.getElementById('cellContent').value;
+  const paramId = document.getElementById('cellParam').value;
+  selectedCells.forEach(key => {
+    if (cells[key]) {
+      cells[key].cell_type = type;
+      cells[key].content = content;
+      cells[key].parameter_id = paramId ? parseInt(paramId) : null;
+    }
+  });
+  buildGrid();
+});
+
+document.getElementById('cellContent').addEventListener('input', function() {
+  selectedCells.forEach(key => {
+    if (cells[key]) cells[key].content = this.value;
+  });
+});
+
+document.getElementById('cellType').addEventListener('change', function() {
+  selectedCells.forEach(key => {
+    if (cells[key]) cells[key].cell_type = this.value;
+  });
+  buildGrid();
+});
+
+document.querySelectorAll('.cell-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const type = btn.dataset.type;
+    selectedCells.forEach(key => {
+      if (cells[key]) cells[key].cell_type = type;
+    });
+    document.getElementById('cellType').value = type;
+    buildGrid();
+  });
+});
+
+// ========================================================================
+// Merge / unmerge
+// ========================================================================
+document.getElementById('mergeBtn').addEventListener('click', () => {
+  if (selectedCells.size < 2) { alert('Seleccione al menos 2 celdas para combinar.'); return; }
+  const keys = Array.from(selectedCells);
+  const rows = keys.map(k => parseInt(k.split('_')[0]));
+  const cols = keys.map(k => parseInt(k.split('_')[1]));
+  const minR = Math.min(...rows), maxR = Math.max(...rows);
+  const minC = Math.min(...cols), maxC = Math.max(...cols);
+  const originKey = `${minR}_${minC}`;
+
+  // Unmerge all in selection first
+  keys.forEach(k => {
+    if (cells[k]) { cells[k].rowspan = 1; cells[k].colspan = 1; }
+  });
+
+  // Set origin cell span
+  if (!cells[originKey]) {
+    cells[originKey] = {row: minR, col: minC, rowspan: 1, colspan: 1, cell_type: 'label', content: '', parameter_id: null, style: {}};
+  }
+  cells[originKey].rowspan = maxR - minR + 1;
+  cells[originKey].colspan = maxC - minC + 1;
+
+  // Collect content from other cells into origin
+  keys.forEach(k => {
+    if (k !== originKey && cells[k]) {
+      if (!cells[originKey].content && cells[k].content) {
+        cells[originKey].content = cells[k].content;
+      }
+      delete cells[k];
+    }
+  });
+
+  selectedCells.clear();
+  selectedCells.add(originKey);
+  buildGrid();
+});
+
+document.getElementById('unmergeBtn').addEventListener('click', () => {
+  selectedCells.forEach(key => {
+    if (cells[key]) {
+      cells[key].rowspan = 1;
+      cells[key].colspan = 1;
+    }
+  });
+  buildGrid();
+});
+
+// ========================================================================
+// Style buttons
+// ========================================================================
+document.getElementById('boldBtn').addEventListener('click', () => {
+  selectedCells.forEach(key => {
+    if (!cells[key]) return;
+    if (!cells[key].style) cells[key].style = {};
+    cells[key].style.bold = !cells[key].style.bold;
+  });
+  buildGrid();
+});
+
+document.querySelectorAll('.align-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const align = btn.dataset.align;
+    selectedCells.forEach(key => {
+      if (!cells[key]) return;
+      if (!cells[key].style) cells[key].style = {};
+      cells[key].style.align = align;
+    });
+    buildGrid();
+  });
+});
+
+// ========================================================================
+// Resize grid
+// ========================================================================
+document.getElementById('resizeBtn').addEventListener('click', () => {
+  ROWS = parseInt(document.getElementById('gridRows').value) || 10;
+  COLS = parseInt(document.getElementById('gridCols').value) || 6;
+  buildGrid();
+});
+
+// ========================================================================
+// Save
+// ========================================================================
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const payload = Object.values(cells).filter(c => c && (c.content || c.parameter_id || c.cell_type !== 'label'));
+  fetch('{{ url_for("designer.save_layout", exam_id=exam.id) }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      showToast('Plantilla guardada correctamente.', 'success');
+      updatePreview();
+    } else {
+      showToast('Error al guardar: ' + data.error, 'danger');
+    }
+  });
+});
+
+function updatePreview() {
+  fetch('{{ url_for("designer.preview", exam_id=exam.id) }}')
+    .then(r => r.text())
+    .then(html => {
+      const pane = document.getElementById('previewPane');
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const tableEl = doc.querySelector('table');
+      pane.innerHTML = '';
+      if (tableEl) pane.appendChild(tableEl);
+      else pane.innerHTML = '<small class="text-muted">Sin celdas definidas.</small>';
+    });
+}
+
+function showToast(msg, type) {
+  const div = document.createElement('div');
+  div.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+  div.style.zIndex = 9999;
+  div.innerHTML = msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+  document.body.appendChild(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+// ========================================================================
+// Init
+// ========================================================================
+document.getElementById('gridRows').value = ROWS;
+document.getElementById('gridCols').value = COLS;
+buildGrid();
+updatePreview();
+</script>
+{% endblock %}
